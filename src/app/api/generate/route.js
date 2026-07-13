@@ -28,7 +28,7 @@ export async function POST(request) {
       temperature: 0.8,
     });
 
-    const aiText = response.choices.message.content;
+    const aiText = response.choices[0].message.content;
     const tweetsArray = aiText.split('|||').map(tweet => tweet.trim()).filter(Boolean);
 
     return NextResponse.json({ tweets: tweetsArray });
