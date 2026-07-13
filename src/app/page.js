@@ -7,31 +7,31 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(''); // Holds error messages
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!topic.trim()) return;
     setLoading(true);
-    setError(''); // Clear any previous errors before generating
+    setError('');
+    setTweets([]); // Clear old tweets before loading new ones
     
-    // Simulated AI response delay
-    setTimeout(() => {
-      try {
-        // Simulated error logic: If you type "error" or "fail", it simulates a crash
-        if (topic.toLowerCase() === 'error' || topic.toLowerCase() === 'fail') {
-          throw new Error("Failed to connect to the AI engine. Please verify your connection and try again.");
-        }
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic }),
+      });
 
-        setTweets([
-          `🚀 Just thinking about ${topic}! It's going to change everything. #Innovation #Future`,
-          `Unpopular opinion: If you aren't looking into ${topic} right now, you're missing out. 🧵👇`,
-          `Spent the morning diving deep into ${topic}. Here are 3 major things you need to know...`
-        ]);
-      } catch (err) {
-        setError(err.message || 'An unexpected error occurred.');
-        setTweets([]); // Clear any old tweets if it fails
-      } finally {
-        setLoading(false);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong during generation.');
       }
-    }, 1200);
+
+      setTweets(data.tweets);
+    } catch (err) {
+      setError(err.message || 'Could not connect to the generator engine.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
