@@ -22,7 +22,7 @@ export async function POST(request) {
         },
         {
           role: 'user',
-          content: `Write 3 tweets about: ${topic}`
+          content: `Write 5 tweets about: ${topic}`
         }
       ],
       temperature: 0.8,
