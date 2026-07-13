@@ -5,13 +5,16 @@ export default function Home() {
   const [topic, setTopic] = useState('');
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(''); // Holds error messages
+  const [error, setError] = useState('');
 
-  const handleGenerate = async () => {
-    if (!topic.trim()) return;
+  const handleGenerate = async (e) => {
+    // This stops the page from doing a full reload when form submission happens
+    if (e) e.preventDefault(); 
+    
+    if (!topic.trim() || loading) return;
     setLoading(true);
     setError('');
-    setTweets([]); // Clear old tweets before loading new ones
+    setTweets([]);
     
     try {
       const response = await fetch('/api/generate', {
@@ -51,21 +54,20 @@ export default function Home() {
           </p>
         </header>
 
-        {/* Input Form Card */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-black/40 mb-10 backdrop-blur-sm">
+        {/* Input Form Card - WRAPPED IN A FORM TAG */}
+        <form onSubmit={handleGenerate} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-black/40 mb-10 backdrop-blur-sm">
           <label className="block text-sm font-medium text-slate-300 mb-2">
             What is your tweet topic?
           </label>
           <div className="flex flex-col gap-4">
             <input
               type="text"
-              placeholder="e.g., Artificial Intelligence, Remote Work... (Type 'error' to test failure)"
+              placeholder="e.g., Artificial Intelligence, Remote Work..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="w-full p-4 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-base"
             />
             
-            {/* ERROR MESSAGE DISPLAY */}
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl flex items-center gap-2">
                 <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,12 +77,12 @@ export default function Home() {
               </div>
             )}
 
+            {/* Changing button type to "submit" allows Enter key to fire the handleGenerate function */}
             <button
-              onClick={handleGenerate}
+              type="submit"
               disabled={loading || !topic.trim()}
               className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/20 active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              {/* LOADING SPINNER */}
               {loading ? (
                 <>
                   <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
@@ -94,7 +96,7 @@ export default function Home() {
               )}
             </button>
           </div>
-        </section>
+        </form>
 
         {/* Results Section */}
         <section>
@@ -127,16 +129,13 @@ export default function Home() {
                     {tweet}
                   </p>
                   
-                  {/* Action Bar inside card */}
                   <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center opacity-80 group-hover:opacity-100 transition-opacity">
-                    
-                    {/* CHARACTER COUNT */}
                     <span className={`text-xs font-medium ${tweet.length > 280 ? 'text-red-400' : 'text-slate-500'}`}>
                       {tweet.length} / 280 characters
                     </span>
 
-                    {/* COPY TO CLIPBOARD BUTTON */}
                     <button 
+                      type="button"
                       onClick={() => navigator.clipboard.writeText(tweet)}
                       className="text-xs font-medium text-slate-400 hover:text-blue-400 transition flex items-center gap-1.5 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800"
                     >
