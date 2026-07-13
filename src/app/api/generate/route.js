@@ -10,7 +10,7 @@ export async function POST(request) {
     const { topic } = await request.json();
 
     if (!topic) {
-      return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Topic text is missing.' }, { status: 400 });
     }
 
     const response = await openai.chat.completions.create({
@@ -22,20 +22,34 @@ export async function POST(request) {
         },
         {
           role: 'user',
-          content: `Write 5 tweets about: ${topic}`
+          content: `Write 3 tweets about: ${topic}`
         }
       ],
       temperature: 0.8,
     });
 
-    const aiText = response.choices[0].message.content;
+    // Check if the response object has the required array indexes intact
+    if (!response?.choices?.[0]?.message) {
+      console.error("Malformed OpenAI Response Structure:", response);
+      return NextResponse.json({ error: 'OpenAI returned an empty or unreadable text package.' }, { status: 500 });
+    }
+
+    const aiText = response.choices[0].message.content || '';
     const tweetsArray = aiText.split('|||').map(tweet => tweet.trim()).filter(Boolean);
 
     return NextResponse.json({ tweets: tweetsArray });
+
   } catch (error) {
-    console.error('OpenAI Error:', error);
+    console.error('Interceptive API Error Log:', error);
+    
+    // Safely parse out common account limits or incorrect setup states
+    let customErrorMessage = 'Failed to communicate with OpenAI backend infrastructure.';
+    if (error?.message) {
+      customErrorMessage = error.message;
+    }
+
     return NextResponse.json(
-      { error: error.message || 'Failed to communicate with OpenAI API.' }, 
+      { error: customErrorMessage }, 
       { status: 500 }
     );
   }
