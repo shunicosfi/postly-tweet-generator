@@ -18,11 +18,11 @@ export async function POST(request) {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert social media ghostwriter. Generate exactly 3 highly engaging, distinct tweets based on the user topic. Separate each tweet with a unique delimiter string like "|||". Ensure each tweet stays strictly under 280 characters, uses strong hooks, clean formatting, and relevant hashtags.'
+          content: 'You are an expert social media ghostwriter. Generate exactly 5 highly engaging, distinct tweets based on the user topic. Separate each tweet with a unique delimiter string like "|||". Ensure each tweet stays strictly under 280 characters, uses strong hooks, clean formatting, and relevant hashtags.'
         },
         {
           role: 'user',
-          content: `Write 3 tweets about: ${topic}`
+          content: `Write 5 tweets about: ${topic}`
         }
       ],
       temperature: 0.8,
