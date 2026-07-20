@@ -1,56 +1,57 @@
-import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const apiKey = process.env.OPENAI_API_KEY || "TEMPORARY_PRODUCTION_VAULT_HOLDER";
 
-export async function POST(request) {
+
+export async function POST(req) {
   try {
-    const { topic } = await request.json();
-
-    if (!topic) {
-      return NextResponse.json({ error: 'Topic text is missing.' }, { status: 400 });
+    if (!apiKey) {
+      return NextResponse.json({ success: false, error: "Missing API Key configuration." }, { status: 500 });
     }
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const openai = new OpenAI({ apiKey });
+    const { source, tone, formality } = await req.json();
+
+    if (!source) {
+      return NextResponse.json({ success: false, error: "Missing text payload parameters." }, { status: 400 });
+    }
+
+    const systemPrompt = `You are ExecutivePostStudio, an elite ghostwriter.
+Convert the source text into three distinct brand-voiced variations:
+- linkedin_long: A structured, multi-paragraph thought-leadership article.
+- x_short: A single sharp tweet under 260 characters.
+- x_thread: An array of 3 separate sequential sentences/tweets.
+
+You must respond with a clean, raw JSON object string matching this exact structure:
+{
+  "linkedin_long": "text string...",
+  "x_short": "text string...",
+  "x_thread": ["tweet 1", "tweet 2", "tweet 3"]
+}
+CRITICAL: Do not include markdown code ticks, block quotes, or backticks like \`\`\`json. Respond with raw text braces only.`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
       messages: [
-        {
-          role: 'system',
-          content: 'You are an expert social media ghostwriter. Generate exactly 5 highly engaging, distinct tweets based on the user topic. Separate each tweet with a unique delimiter string like "|||". Ensure each tweet stays strictly under 280 characters, uses strong hooks, clean formatting, and relevant hashtags.'
-        },
-        {
-          role: 'user',
-          content: `Write 5 tweets about: ${topic}`
-        }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Material to distribute: "${source}"` }
       ],
-      temperature: 0.8,
+      temperature: 0.7,
     });
 
-    // Check if the response object has the required array indexes intact
-    if (!response?.choices?.[0]?.message) {
-      console.error("Malformed OpenAI Response Structure:", response);
-      return NextResponse.json({ error: 'OpenAI returned an empty or unreadable text package.' }, { status: 500 });
+    let rawOutput = completion.choices[0].message.content.trim();
+    
+    // Clean out backticks manually just in case the model returns them anyway
+    if (rawOutput.startsWith("```")) {
+      rawOutput = rawOutput.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
     }
 
-    const aiText = response.choices[0].message.content || '';
-    const tweetsArray = aiText.split('|||').map(tweet => tweet.trim()).filter(Boolean);
-
-    return NextResponse.json({ tweets: tweetsArray });
+    const parsedData = JSON.parse(rawOutput);
+    return NextResponse.json({ success: true, data: parsedData });
 
   } catch (error) {
-    console.error('Interceptive API Error Log:', error);
-    
-    // Safely parse out common account limits or incorrect setup states
-    let customErrorMessage = 'Failed to communicate with OpenAI backend infrastructure.';
-    if (error?.message) {
-      customErrorMessage = error.message;
-    }
-
-    return NextResponse.json(
-      { error: customErrorMessage }, 
-      { status: 500 }
-    );
+    console.error("API ROUTE PIPELINE FAILURE:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
